@@ -1,0 +1,17 @@
+# Entornos virtuales y dependencias
+node_modules/
+venv/
+__pycache__/
+*.pyc
+
+# Archivos de compilacion y ejecutables
+backend/dist/
+backend/build/
+backend/*.spec
+*.exe
+backend/bin/ffmpeg.exe
+
+# Archivos temporales y descargas
+temp_downloads/
+.env
+.DS_Store
