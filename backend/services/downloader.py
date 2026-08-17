@@ -59,7 +59,7 @@ def process_download(url: str):
         }],
         'quiet': True,
     }
-
+    
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
@@ -87,3 +87,54 @@ def process_download(url: str):
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Download error: {str(e)}")
+
+def extract_playlist(url: str):
+    if "youtube.com" in url or "youtu.be" in url:
+        ydl_opts = {
+            'extract_flat': True,
+            'quiet': True,
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                tracks = []
+                if 'entries' in info:
+                    for entry in info['entries']:
+                        if entry.get('title') and entry.get('title') != '[Private video]':
+                            tracks.append({
+                                'title': entry.get('title'),
+                                'uploader': entry.get('uploader', 'Desconocido'),
+                                'url': entry.get('url'),
+                                'source': 'youtube',
+                                'thumbnail': entry.get('thumbnails', [{}])[0].get('url') if entry.get('thumbnails') else None
+                            })
+                return {"playlist_title": info.get('title', 'YouTube Playlist'), "tracks": tracks}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e))
+            
+    elif "spotify.com" in url:
+        import re, urllib.request, json
+        match = re.search(r'spotify\.com/([^/]+)/([^?]+)', url)
+        if match:
+            embed_url = f"https://open.spotify.com/embed/{match.group(1)}/{match.group(2)}"
+            req = urllib.request.Request(embed_url, headers={'User-Agent': 'Mozilla/5.0'})
+            try:
+                html = urllib.request.urlopen(req).read().decode('utf-8')
+                next_data = re.search(r'<script id="__NEXT_DATA__" type="application/json">([^<]+)</script>', html)
+                if next_data:
+                    data = json.loads(next_data.group(1))
+                    entity = data['props']['pageProps']['state']['data']['entity']
+                    tracks = []
+                    for item in entity.get('trackList', []):
+                        tracks.append({
+                            'title': item.get('title'),
+                            'uploader': item.get('subtitle', 'Desconocido'),
+                            'url': None,
+                            'source': 'spotify',
+                            'thumbnail': entity.get('coverArt', {}).get('extractedColors', {}).get('colorDark', {}).get('hex') # Fallback for now
+                        })
+                    return {"playlist_title": entity.get('title', 'Spotify Playlist'), "tracks": tracks}
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Error en Spotify: {str(e)}")
+                
+    raise HTTPException(status_code=400, detail="URL de playlist no soportada")

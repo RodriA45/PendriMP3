@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { HardDrive, Search, Music, FolderOpen, Info } from 'lucide-react';
+import { HardDrive, Search, Music, FolderOpen, Info, ShieldAlert } from 'lucide-react';
 import PendriveConnector from './components/PendriveConnector';
 import SearchBar from './components/SearchBar';
 import ResultsList from './components/ResultsList';
 import LocalOrganizer from './components/LocalOrganizer';
+import PlaylistView from './components/PlaylistView';
 
 function App() {
   const [directoryHandle, setDirectoryHandle] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [playlist, setPlaylist] = useState(null);
 
   return (
     <div className="min-h-screen bg-[#0f1115] text-neutral-200 font-sans selection:bg-indigo-500/30">
@@ -41,9 +43,17 @@ function App() {
                  <h2 className="text-2xl font-semibold text-white mb-2">Encuentra y Descarga</h2>
                  <p className="text-neutral-400 mb-6">Busca cualquier canción de YouTube o pega directamente el enlace.</p>
                  <SearchBar 
-                   onSearchStart={() => setIsSearching(true)}
+                   onSearchStart={() => {
+                     setIsSearching(true);
+                     setPlaylist(null);
+                     setSearchResults([]);
+                   }}
                    onSearchResults={(results) => {
                      setSearchResults(results);
+                     setIsSearching(false);
+                   }}
+                   onPlaylistResults={(playlistData) => {
+                     setPlaylist(playlistData);
                      setIsSearching(false);
                    }}
                  />
@@ -51,11 +61,18 @@ function App() {
             </section>
 
             <section>
-              <ResultsList 
-                results={searchResults} 
-                isSearching={isSearching} 
-                directoryHandle={directoryHandle}
-              />
+              {playlist ? (
+                <PlaylistView 
+                  playlist={playlist}
+                  directoryHandle={directoryHandle}
+                />
+              ) : (
+                <ResultsList 
+                  results={searchResults} 
+                  isSearching={isSearching} 
+                  directoryHandle={directoryHandle}
+                />
+              )}
             </section>
           </div>
 
@@ -83,6 +100,19 @@ function App() {
              </div>
 
              <LocalOrganizer directoryHandle={directoryHandle} />
+
+             <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <ShieldAlert className="w-5 h-5 text-red-400" />
+                  <h3 className="font-semibold text-red-200 text-sm">¿Tu antivirus bloquea las descargas?</h3>
+                </div>
+                <p className="text-xs text-red-200/80 leading-relaxed mb-3">
+                  Windows Defender puede detectar falsos positivos porque no tenemos una firma digital paga.
+                </p>
+                <div className="text-xs text-red-200/90 font-medium">
+                  <strong>Solución:</strong> Ve a Seguridad de Windows &gt; Exclusiones &gt; Agregar exclusión &gt; Selecciona <strong>"Proceso"</strong> y escribe exactamente <code>PendriMP3.exe</code>.
+                </div>
+             </div>
           </div>
 
         </div>

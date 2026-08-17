@@ -26,14 +26,20 @@ if not exist "backend\bin\ffmpeg.exe" (
 
 echo [3/3] Empaquetando con PyInstaller...
 cd backend
-:: Usamos --onefile para crear un solo ejecutable y --windowed para ocultar la consola
-call venv\Scripts\pyinstaller --noconfirm --onefile --windowed --name "PendriMP3" --add-data "../frontend/dist;frontend_dist/" --add-data "bin/ffmpeg.exe;bin/" app_window.py
+
+:: Limpiamos cache previa para asegurar que tome el icono y nombre nuevos
+if exist "build" rmdir /s /q "build"
+if exist "PendriMP3.spec" del "PendriMP3.spec"
+
+:: Usamos --onedir (por defecto al quitar --onefile) para crear una carpeta portable completa, lo que hace que inicie al instante.
+call venv\Scripts\pyinstaller --clean --noconfirm --windowed --name "PendriMP3" --icon "icon.ico" --add-data "../frontend/dist;frontend_dist/" --add-data "bin/ffmpeg.exe;bin/" app_window.py
 
 echo.
 echo ===================================================
 echo ¡COMPILACION EXITOSA!
-echo Tu archivo magico portable esta en: backend\dist\PendriMP3.exe
-echo Puedes copiar este archivo a un pendrive y usarlo en 
-echo cualquier PC sin instalar NADA.
+echo Tu carpeta magica portable esta en: backend\dist\PendriMP3\
+echo Adentro veras el ejecutable PendriMP3.exe. 
+echo Puedes comprimir esa carpeta en .zip y enviarsela a tus 
+echo clientes. Inicia al instante en cualquier PC.
 echo ===================================================
 pause

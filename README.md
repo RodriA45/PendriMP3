@@ -38,6 +38,22 @@ La forma recomendada de usar PendriMP3 (y compartirlo con amigos) es generar su 
 3. Cuando termine, encontrarás tu archivo mágico en `backend\dist\PendriMP3.exe`. 
 4. ¡Cópialo a tu pendrive o escritorio, hazle doble clic y disfruta!
 
+## 🛡️ Solución de Problemas: Antivirus (Falso Positivo)
+
+Al ejecutar la aplicación compilada (`PendriMP3.exe`), es posible que **Windows Defender u otro antivirus bloquee las descargas** o cierre la aplicación inesperadamente al intentar descargar una canción.
+
+**¿Por qué sucede esto?**
+El programa utiliza internamente scripts de Python (`yt-dlp`) y el conversor `ffmpeg.exe` para extraer audio de internet. Como este proyecto es gratuito y no cuenta con una firma digital comercial (cuestan +$300/año), Windows Defender detecta actividad de red de un ejecutable "desconocido" y entra en pánico, generando un **Falso Positivo**.
+
+**✅ Cómo solucionarlo definitivamente:**
+No basta con excluir la carpeta del programa, debes **Excluir el Proceso**:
+1. Abre **Seguridad de Windows** > **Protección contra virus y amenazas**.
+2. Haz clic en **Administrar la configuración**.
+3. Baja hasta **Exclusiones** y haz clic en **Agregar o quitar exclusiones**.
+4. Haz clic en **Agregar exclusión** y selecciona **Proceso** (Process).
+5. Escribe exactamente `PendriMP3.exe` y haz clic en Guardar.
+*(Esto le dice a Windows que confíe plenamente en la aplicación y le permita descargar tu música).*
+
 ## 🛠️ Entorno de Desarrollo (Programadores)
 
 Si deseas modificar el código o añadir características, necesitarás tener instalado:

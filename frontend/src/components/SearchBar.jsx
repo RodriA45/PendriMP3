@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
-const SearchBar = ({ onSearchStart, onSearchResults }) => {
+const SearchBar = ({ onSearchStart, onSearchResults, onPlaylistResults }) => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -12,6 +12,23 @@ const SearchBar = ({ onSearchStart, onSearchResults }) => {
 
     setLoading(true);
     onSearchStart();
+
+    // Detección de Playlists
+    if (query.includes('list=') || query.includes('spotify.com/playlist') || query.includes('spotify.com/album')) {
+      try {
+        const response = await axios.post('http://localhost:8000/api/playlist/extract', {
+          url: query
+        });
+        onPlaylistResults(response.data);
+      } catch (err) {
+        console.error(err);
+        alert('Error extrayendo playlist. Revisa la URL o si el servicio está disponible.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       const response = await axios.post('http://localhost:8000/api/search', {
         query: query,

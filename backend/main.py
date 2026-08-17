@@ -38,6 +38,11 @@ def download(request: DownloadRequest):
     metadata = process_download(request.url)
     return {"metadata": metadata}
 
+@app.post("/api/playlist/extract")
+def playlist_extract(request: DownloadRequest):
+    from services.downloader import extract_playlist
+    return extract_playlist(request.url)
+
 @app.post("/api/metadata")
 async def extract_metadata(file: UploadFile = File(...)):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp:
