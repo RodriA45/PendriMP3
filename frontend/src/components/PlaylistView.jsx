@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Download, Loader2, Music, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 import axios from 'axios';
 
-const PlaylistView = ({ playlist, directoryHandle }) => {
+const PlaylistView = ({ playlist, directoryHandle, quality }) => {
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusMap, setStatusMap] = useState({}); // { index: 'pending' | 'downloading' | 'success' | 'error' | 'cancelled' }
@@ -37,7 +37,7 @@ const PlaylistView = ({ playlist, directoryHandle }) => {
         // If from Spotify, we need to search YouTube first
         if (track.source === 'spotify' && !downloadUrl) {
           const searchRes = await axios.post('http://localhost:8000/api/search', {
-            query: `${track.title} ${track.uploader}`,
+            query: `${track.title} ${track.uploader} official audio`,
             limit: 1
           });
           if (searchRes.data.results.length > 0) {
@@ -51,7 +51,8 @@ const PlaylistView = ({ playlist, directoryHandle }) => {
 
         // Request download from backend
         const response = await axios.post('http://localhost:8000/api/download', {
-          url: downloadUrl
+          url: downloadUrl,
+          quality: quality
         });
         
         const metadata = response.data.metadata;
@@ -77,6 +78,17 @@ const PlaylistView = ({ playlist, directoryHandle }) => {
 
         // Cleanup backend
         await axios.delete(`http://localhost:8000/api/cleanup/${metadata.file_id}`);
+        
+        // Add to history
+        try {
+          await axios.post('http://localhost:8000/api/history/add', {
+            title: metadata.title,
+            artist: metadata.artist,
+            genre: metadata.genre,
+            thumbnail: metadata.thumbnail || '',
+            file_path: `${genre}/${artist}/${cleanTitle}.mp3`
+          });
+        } catch (e) { console.error("Error history", e); }
         
         setStatusMap(prev => ({ ...prev, [i]: 'success' }));
         successCount++;

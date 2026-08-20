@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Download, Loader2, Clock, Music } from 'lucide-react';
 import axios from 'axios';
 
-const ResultsList = ({ results, isSearching, directoryHandle }) => {
+const ResultsList = ({ results, isSearching, directoryHandle, quality, onPlay, onEdit }) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [downloadStatus, setDownloadStatus] = useState('');
+  const [downloadedMeta, setDownloadedMeta] = useState({});
 
   if (isSearching) {
     return (
@@ -30,7 +31,8 @@ const ResultsList = ({ results, isSearching, directoryHandle }) => {
     
     try {
       const metadataRes = await axios.post('http://localhost:8000/api/download', {
-        url: video.link
+        url: video.link,
+        quality: quality
       });
       const meta = metadataRes.data.metadata;
       
@@ -57,12 +59,24 @@ const ResultsList = ({ results, isSearching, directoryHandle }) => {
       await writable.write(fileRes.data);
       await writable.close();
       
+      // Add to history
+      try {
+        await axios.post('http://localhost:8000/api/history/add', {
+          title: meta.title,
+          artist: meta.artist,
+          genre: meta.genre,
+          thumbnail: meta.thumbnail || '',
+          file_path: `${safeGenre}/${safeArtist}/${safeTitle}.mp3`
+        });
+      } catch (e) { console.error("Error history", e); }
+      
       setDownloadStatus('¡Música guardada!');
+      setDownloadedMeta(prev => ({ ...prev, [video.id]: meta }));
       
       setTimeout(() => {
         setDownloadingId(null);
         setDownloadStatus('');
-      }, 3000);
+      }, 2000);
   
     } catch (e) {
       console.error(e);
@@ -114,6 +128,21 @@ const ResultsList = ({ results, isSearching, directoryHandle }) => {
                    Descargando...
                  </div>
                  <p className="text-xs text-neutral-500 w-32 truncate">{downloadStatus}</p>
+               </div>
+             ) : downloadedMeta[video.id] ? (
+               <div className="flex flex-col gap-2">
+                 <button 
+                   onClick={() => onPlay(downloadedMeta[video.id])}
+                   className="w-full text-xs font-medium bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-indigo-500/20"
+                 >
+                   Reproducir
+                 </button>
+                 <button 
+                   onClick={() => onEdit(downloadedMeta[video.id])}
+                   className="w-full text-xs font-medium bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg hover:bg-neutral-700"
+                 >
+                   Editar MP3
+                 </button>
                </div>
              ) : (
                <button 

@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
-import { HardDrive, Search, Music, FolderOpen, Info, ShieldAlert } from 'lucide-react';
+import { HardDrive, Search, Music, FolderOpen, Info, ShieldAlert, Clock, Settings2, Edit3, PlayCircle } from 'lucide-react';
 import PendriveConnector from './components/PendriveConnector';
 import SearchBar from './components/SearchBar';
 import ResultsList from './components/ResultsList';
-import LocalOrganizer from './components/LocalOrganizer';
 import PlaylistView from './components/PlaylistView';
+import SmartUsbManager from './components/SmartUsbManager';
+import HistoryView from './components/HistoryView';
+import AudioPlayer from './components/AudioPlayer';
+import MetadataEditor from './components/MetadataEditor';
 
 function App() {
   const [directoryHandle, setDirectoryHandle] = useState(null);
+  const [activeTab, setActiveTab] = useState('search');
+  const [quality, setQuality] = useState('192');
+  const [playerFile, setPlayerFile] = useState(null);
+  const [metadataToEdit, setMetadataToEdit] = useState(null);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [playlist, setPlaylist] = useState(null);
@@ -40,39 +47,77 @@ function App() {
             <section className="bg-[#16181d] rounded-2xl p-1 border border-white/5 shadow-2xl relative overflow-hidden group">
                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                <div className="relative p-6">
+                 {/* Sidebar Nav & Settings */}
+                 <nav className="space-y-2 mb-8">
+                   <button 
+                     onClick={() => setActiveTab('search')}
+                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'search' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                   >
+                     <Search className="w-5 h-5" />
+                     <span className="font-medium">Búsqueda / Playlists</span>
+                   </button>
+                   <button 
+                     onClick={() => setActiveTab('history')}
+                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                   >
+                     <Clock className="w-5 h-5" />
+                     <span className="font-medium">Historial</span>
+                   </button>
+                   
+                   <div className="mt-8 mb-2 px-4">
+                     <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Ajustes</span>
+                   </div>
+                   
+                   <div className="px-4 py-3 bg-black/20 rounded-xl border border-white/5">
+                     <div className="flex items-center gap-2 mb-3 text-neutral-300">
+                       <Settings2 className="w-4 h-4" />
+                       <span className="text-sm font-medium">Calidad de Audio</span>
+                     </div>
+                     <select 
+                       value={quality} 
+                       onChange={(e) => setQuality(e.target.value)}
+                       className="w-full bg-neutral-900 border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                     >
+                       <option value="128">Rápida (128 kbps)</option>
+                       <option value="192">Normal (192 kbps)</option>
+                       <option value="320">Alta Fidelidad (320 kbps)</option>
+                       <option value="0">Máxima (FLAC/Opus)</option>
+                     </select>
+                   </div>
+                 </nav>
+
                  <h2 className="text-2xl font-semibold text-white mb-2">Encuentra y Descarga</h2>
                  <p className="text-neutral-400 mb-6">Busca cualquier canción de YouTube o pega directamente el enlace.</p>
-                 <SearchBar 
-                   onSearchStart={() => {
-                     setIsSearching(true);
-                     setPlaylist(null);
-                     setSearchResults([]);
-                   }}
-                   onSearchResults={(results) => {
-                     setSearchResults(results);
-                     setIsSearching(false);
-                   }}
-                   onPlaylistResults={(playlistData) => {
-                     setPlaylist(playlistData);
-                     setIsSearching(false);
-                   }}
-                 />
+                 
+                 <div className="flex-1 space-y-6">
+                   {activeTab === 'search' ? (
+                     <>
+                       <SearchBar 
+                         onSearchStart={() => {
+                           setIsSearching(true);
+                           setPlaylist(null);
+                           setSearchResults([]);
+                         }}
+                         onSearchResults={(results) => {
+                           setSearchResults(results);
+                           setIsSearching(false);
+                         }}
+                         onPlaylistResults={(playlistData) => {
+                           setPlaylist(playlistData);
+                           setIsSearching(false);
+                         }}
+                       />
+                       {playlist ? (
+                         <PlaylistView playlist={playlist} directoryHandle={directoryHandle} quality={quality} />
+                       ) : (
+                         <ResultsList results={searchResults} isSearching={isSearching} directoryHandle={directoryHandle} quality={quality} onPlay={setPlayerFile} onEdit={setMetadataToEdit} />
+                       )}
+                     </>
+                   ) : (
+                     <HistoryView />
+                   )}
+                 </div>
                </div>
-            </section>
-
-            <section>
-              {playlist ? (
-                <PlaylistView 
-                  playlist={playlist}
-                  directoryHandle={directoryHandle}
-                />
-              ) : (
-                <ResultsList 
-                  results={searchResults} 
-                  isSearching={isSearching} 
-                  directoryHandle={directoryHandle}
-                />
-              )}
             </section>
           </div>
 
@@ -99,7 +144,7 @@ function App() {
                 </ul>
              </div>
 
-             <LocalOrganizer directoryHandle={directoryHandle} />
+             <SmartUsbManager directoryHandle={directoryHandle} />
 
              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-5">
                 <div className="flex items-center gap-3 mb-3">
@@ -114,7 +159,6 @@ function App() {
                 </div>
              </div>
           </div>
-
         </div>
       </main>
 
@@ -131,6 +175,23 @@ function App() {
           </a>
         </p>
       </footer>
+
+      {playerFile && (
+        <AudioPlayer 
+          fileId={playerFile.fileId} 
+          title={playerFile.title} 
+          artist={playerFile.artist} 
+          onClose={() => setPlayerFile(null)} 
+        />
+      )}
+
+      {metadataToEdit && (
+        <MetadataEditor
+          metadata={metadataToEdit}
+          onClose={() => setMetadataToEdit(null)}
+          onSave={(newMeta) => console.log('Metadata saved:', newMeta)}
+        />
+      )}
     </div>
   );
 }

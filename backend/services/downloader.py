@@ -2,6 +2,9 @@ import os
 import sys
 import yt_dlp
 from fastapi import HTTPException
+import syncedlyrics
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3, USLT, error
 
 if getattr(sys, 'frozen', False):
     BASE_DIR = sys._MEIPASS
@@ -47,7 +50,7 @@ def search_youtube(query: str, limit: int = 5):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def process_download(url: str):
+def process_download(url: str, quality: str = '192'):
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': f'{TEMP_DIR}/%(id)s.%(ext)s',
@@ -55,7 +58,7 @@ def process_download(url: str):
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192',
+            'preferredquality': quality,
         }],
         'quiet': True,
     }
@@ -83,6 +86,25 @@ def process_download(url: str):
                 "genre": genre,
                 "thumbnail": info.get('thumbnail')
             }
+            
+            # Embed lyrics using syncedlyrics
+            file_path = f"{TEMP_DIR}/{video_id}.mp3"
+            if os.path.exists(file_path):
+                try:
+                    search_query = f"{metadata['title']} {metadata['artist']}"
+                    lrc = syncedlyrics.search(search_query)
+                    if lrc:
+                        try:
+                            audio = ID3(file_path)
+                        except error:
+                            audio = ID3()
+                        
+                        audio.add(USLT(encoding=3, lang='eng', desc='desc', text=lrc))
+                        audio.save(file_path, v2_version=3)
+                except Exception as e:
+                    print(f"Error embedding lyrics: {e}")
+                    pass
+
             return metadata
             
     except Exception as e:

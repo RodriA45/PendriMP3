@@ -6,6 +6,29 @@ from pydantic import BaseModel
 import uvicorn
 import os
 import tempfile
+import sqlite3
+import psutil
+
+# Initialize History DB
+DB_PATH = "history.db"
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS downloads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            artist TEXT,
+            genre TEXT,
+            thumbnail TEXT,
+            file_path TEXT,
+            date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
 
 from services.downloader import search_youtube, process_download, TEMP_DIR
 
@@ -25,6 +48,7 @@ class SearchQuery(BaseModel):
 
 class DownloadRequest(BaseModel):
     url: str
+    quality: str = '192'
 
 
 
@@ -35,7 +59,7 @@ def search(request: SearchQuery):
 
 @app.post("/api/download")
 def download(request: DownloadRequest):
-    metadata = process_download(request.url)
+    metadata = process_download(request.url, request.quality)
     return {"metadata": metadata}
 
 @app.post("/api/playlist/extract")
@@ -65,6 +89,31 @@ async def extract_metadata(file: UploadFile = File(...)):
         filename = file.filename.replace('.mp3', '')
         return {"genre": "Desconocido", "artist": "Desconocido", "title": filename}
 
+class MetadataEditRequest(BaseModel):
+    file_id: str
+    title: str
+    artist: str
+    genre: str
+
+@app.post("/api/metadata/edit")
+def edit_metadata(req: MetadataEditRequest):
+    file_path = f"{TEMP_DIR}/{req.file_id}.mp3"
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    try:
+        from mutagen.mp3 import MP3
+        from mutagen.easyid3 import EasyID3
+        
+        audio = MP3(file_path, ID3=EasyID3)
+        audio['title'] = req.title
+        audio['artist'] = req.artist
+        audio['genre'] = req.genre
+        audio.save()
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.delete("/api/cleanup/{file_id}")
 def cleanup(file_id: str):
     file_path = f"{TEMP_DIR}/{file_id}.mp3"
@@ -87,6 +136,55 @@ def get_file(file_id: str):
         media_type="audio/mpeg",
         filename=f"{file_id}.mp3"
     )
+
+@app.get("/api/drives")
+def get_drives():
+    drives = []
+    for partition in psutil.disk_partitions():
+        if 'removable' in partition.opts or 'cdrom' not in partition.opts:
+            try:
+                usage = psutil.disk_usage(partition.mountpoint)
+                drives.append({
+                    "mountpoint": partition.mountpoint,
+                    "fstype": partition.fstype,
+                    "total": usage.total,
+                    "free": usage.free,
+                    "removable": 'removable' in partition.opts
+                })
+            except PermissionError:
+                continue
+    # Filter to only removable if any exist, else all (useful for testing)
+    removable_drives = [d for d in drives if d['removable']]
+    return {"drives": removable_drives if removable_drives else drives}
+
+class HistoryEntry(BaseModel):
+    title: str
+    artist: str
+    genre: str
+    thumbnail: str
+    file_path: str
+
+@app.post("/api/history/add")
+def add_history(entry: HistoryEntry):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO downloads (title, artist, genre, thumbnail, file_path)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (entry.title, entry.artist, entry.genre, entry.thumbnail, entry.file_path))
+    conn.commit()
+    conn.close()
+    return {"status": "success"}
+
+@app.get("/api/history")
+def get_history():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute('SELECT * FROM downloads ORDER BY date DESC LIMIT 50')
+    rows = c.fetchall()
+    conn.close()
+    return {"history": [dict(ix) for ix in rows]}
 
 import sys
 

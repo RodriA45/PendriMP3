@@ -1,8 +1,10 @@
 fastapi
 uvicorn
 yt-dlp
-youtube-search-python
 mutagen
 python-multipart
 pyinstaller
 pywebview
+Pillow
+syncedlyrics
+psutil
