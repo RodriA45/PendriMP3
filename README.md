@@ -5,14 +5,15 @@ PendriMP3 es una aplicación web local moderna diseñada para buscar, descargar 
 
 <img width="1062" height="1079" alt="Captura de pantalla 2026-08-16 035528" src="https://github.com/user-attachments/assets/1189335d-98a8-467f-b03c-d347c06ee9d9" />
 
-## ✨ Características Principales
+## ✨ Características Principales (v2.0)
 
-* **Buscador Integrado:** Busca cualquier canción directamente desde la interfaz web usando la API de YouTube.
-* **Descargas de Alta Calidad:** Utiliza el potente motor de `yt-dlp` para extraer el mejor audio disponible y convertirlo a MP3 (192kbps).
-* **Categorización Inteligente:** Extrae etiquetas y categorías del video para adivinar el Género y el Artista.
+* **Buscador Integrado:** Busca cualquier canción directamente desde la interfaz web usando la API de YouTube o pega links de Spotify (filtra automáticamente "official audio" para evitar videos con diálogos).
+* **Descargas de Alta Calidad y Letras:** Utiliza el potente motor de `yt-dlp` para extraer el mejor audio disponible (hasta FLAC) y `syncedlyrics` para incrustar automáticamente la letra de la canción dentro del MP3.
+* **Editor de Metadatos y Reproductor:** Antes de guardar la canción, puedes editar su Título, Artista y Género manualmente, y escucharla en el mini-reproductor integrado.
+* **Categorización e Historial:** Extrae etiquetas para adivinar el Género y el Artista, y guarda un registro local de todo lo que has descargado en una base de datos SQLite ultrarrápida.
+* **Gestor Inteligente de USB:** Detecta automáticamente tus pendrives conectados, mostrándote la letra de la unidad y su espacio libre, escribiendo directamente gracias a la *File System Access API*.
 * **Organizador Local:** Arrastra y suelta tus archivos MP3 locales antiguos para que el sistema lea sus etiquetas ID3 y los organice automáticamente en las carpetas correctas de tu pendrive.
-* **Aplicación Portable:** Se puede compilar en un único archivo `.exe` (que incluye el servidor, la interfaz y FFmpeg) para usar en cualquier PC con Windows sin instalar nada.
-* **Escritura Directa a USB:** Gracias a la *File System Access API*, los archivos se escriben directamente en el directorio que elijas, creando carpetas automáticamente (Ej: `E:\Pop\Michael Jackson\Billie Jean.mp3`).
+* **Instalador Profesional:** Ahora incluye un script de Inno Setup (`compilar_setup.iss`) para generar un instalador `.exe` nativo y profesional, además de la versión portable clásica.
 * **Diseño Premium:** Interfaz de usuario construida con React, Tailwind CSS v4 y animaciones fluidas con Framer Motion, ofreciendo una experiencia moderna y oscura.
 
 ## 🛠️ Tecnologías Utilizadas
@@ -29,9 +30,19 @@ PendriMP3 es una aplicación web local moderna diseñada para buscar, descargar 
 * [yt-dlp](https://github.com/yt-dlp/yt-dlp) (Motor unificado de búsqueda y descarga)
 * [mutagen](https://mutagen.readthedocs.io/) (Extracción de metadatos de archivos locales)
 
-## 🚀 Uso para Usuarios (Portable)
+## 🚀 Uso para Usuarios (Instalador y Portable)
 
-La forma recomendada de usar PendriMP3 (y compartirlo con amigos) es generar su versión portable. Esto creará un único archivo `.exe` que abrirá una ventana de escritorio nativa, ¡sin consolas negras!
+Puedes ofrecer la aplicación de dos maneras: **Instalador clásico (Setup)** o **Portable**.
+
+### Opción 1: Crear Instalador Setup (Recomendado)
+Para generar el instalador `PendriMP3_v2_Setup.exe`:
+1. Asegúrate de tener Inno Setup 6 instalado.
+2. Haz doble clic en el archivo `compilar_setup.iss`.
+3. Haz clic en "Build > Compile" dentro de Inno Setup.
+4. El instalador se generará en la carpeta `setup_output`. ¡Listo para distribuir!
+
+### Opción 2: Compilar Versión Portable
+Esta opción crea la carpeta portable tradicional (sin necesidad de instalación):
 
 1. Clona o descarga este repositorio en tu computadora.
 2. Haz doble clic en **`compilar_exe.bat`**. Este script descargará el motor de FFmpeg portable, compilará la interfaz de React y empaquetará todo usando PyInstaller.
