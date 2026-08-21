@@ -5,16 +5,19 @@ PendriMP3 es una aplicación web local moderna diseñada para buscar, descargar 
 
 <img width="1062" height="1079" alt="Captura de pantalla 2026-08-16 035528" src="https://github.com/user-attachments/assets/1189335d-98a8-467f-b03c-d347c06ee9d9" />
 
-## ✨ Características Principales (v2.0)
+## ✨ Características Principales (v3.0)
 
-* **Buscador Integrado:** Busca cualquier canción directamente desde la interfaz web usando la API de YouTube o pega links de Spotify (filtra automáticamente "official audio" para evitar videos con diálogos).
-* **Descargas de Alta Calidad y Letras:** Utiliza el potente motor de `yt-dlp` para extraer el mejor audio disponible (hasta FLAC) y `syncedlyrics` para incrustar automáticamente la letra de la canción dentro del MP3.
-* **Editor de Metadatos y Reproductor:** Antes de guardar la canción, puedes editar su Título, Artista y Género manualmente, y escucharla en el mini-reproductor integrado.
-* **Categorización e Historial:** Extrae etiquetas para adivinar el Género y el Artista, y guarda un registro local de todo lo que has descargado en una base de datos SQLite ultrarrápida.
-* **Gestor Inteligente de USB:** Detecta automáticamente tus pendrives conectados, mostrándote la letra de la unidad y su espacio libre, escribiendo directamente gracias a la *File System Access API*.
-* **Organizador Local:** Arrastra y suelta tus archivos MP3 locales antiguos para que el sistema lea sus etiquetas ID3 y los organice automáticamente en las carpetas correctas de tu pendrive.
-* **Instalador Profesional:** Ahora incluye un script de Inno Setup (`compilar_setup.iss`) para generar un instalador `.exe` nativo y profesional, además de la versión portable clásica.
-* **Diseño Premium:** Interfaz de usuario construida con React, Tailwind CSS v4 y animaciones fluidas con Framer Motion, ofreciendo una experiencia moderna y oscura.
+* **Descarga de Playlists de Spotify:** ¡NUEVO! Pega un enlace de Spotify y descarga toda la lista de reproducción automáticamente (requiere configurar API keys en el archivo `.env`).
+* **Editor Masivo de Metadatos:** ¡NUEVO! Selecciona tu pendrive y edita el artista o género de decenas de canciones MP3 con un solo clic.
+* **Portadas Incrustadas (Cover Art):** ¡NUEVO! Los archivos MP3 ahora incluyen automáticamente la miniatura de YouTube en alta calidad incrustada en su interior (visible en celulares y estéreos modernos).
+* **Escáner de Duplicados Inteligente:** ¡NUEVO! Ahora agrupa las canciones por Artista y Título para evitar falsos positivos entre canciones con el mismo nombre.
+* **Barra de Progreso:** Interfaz mejorada con seguimiento de descargas en tiempo real para listas grandes.
+* **Buscador Integrado:** Busca cualquier canción directamente desde la interfaz web usando la API de YouTube.
+* **Descargas de Alta Calidad y Letras:** Utiliza el potente motor de `yt-dlp` para extraer el mejor audio disponible y `syncedlyrics` para incrustar automáticamente la letra de la canción dentro del MP3.
+* **Editor de Metadatos Individual:** Edita el Título, Artista y Género manualmente, y escucha la canción en el mini-reproductor integrado.
+* **Gestor Inteligente de USB:** Detecta automáticamente tus pendrives conectados, mostrándote la letra de la unidad y escribiendo directamente gracias a la *File System Access API*.
+* **Organizador Local:** Arrastra y suelta tus archivos MP3 locales antiguos para organizarlos automáticamente en las carpetas correctas de tu pendrive.
+* **Instalador Profesional:** Genera un instalador `.exe` nativo (`compilar_setup.iss`) o utiliza la compilación portátil al instante.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -35,7 +38,7 @@ PendriMP3 es una aplicación web local moderna diseñada para buscar, descargar 
 Puedes ofrecer la aplicación de dos maneras: **Instalador clásico (Setup)** o **Portable**.
 
 ### Opción 1: Crear Instalador Setup (Recomendado)
-Para generar el instalador `PendriMP3_v2_Setup.exe`:
+Para generar el instalador `PendriMP3_v3.0_Setup.exe`:
 1. Asegúrate de tener Inno Setup 6 instalado.
 2. Haz doble clic en el archivo `compilar_setup.iss`.
 3. Haz clic en "Build > Compile" dentro de Inno Setup.
@@ -46,8 +49,9 @@ Esta opción crea la carpeta portable tradicional (sin necesidad de instalación
 
 1. Clona o descarga este repositorio en tu computadora.
 2. Haz doble clic en **`compilar_exe.bat`**. Este script descargará el motor de FFmpeg portable, compilará la interfaz de React y empaquetará todo usando PyInstaller.
-3. Cuando termine, encontrarás tu archivo mágico en `backend\dist\PendriMP3.exe`. 
-4. ¡Cópialo a tu pendrive o escritorio, hazle doble clic y disfruta!
+3. Recuerda configurar el archivo `.env` en la raíz de la carpeta si deseas utilizar la integración con Spotify.
+4. Cuando termine, encontrarás tu carpeta mágica portable en `backend\dist\PendriMP3\`. 
+5. ¡Cópialo a tu pendrive o escritorio, haz doble clic en el `.exe` y disfruta!
 
 ## 🛡️ Solución de Problemas: Antivirus (Falso Positivo)
 
