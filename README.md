@@ -2,8 +2,16 @@
 
 PendriMP3 es una aplicación web local moderna diseñada para buscar, descargar y organizar música automáticamente. Utilizando la última tecnología web (*File System Access API*), la aplicación descarga audio de YouTube, identifica sus metadatos (Género y Artista) y **guarda el archivo MP3 directamente en tu Pendrive** creando las carpetas correspondientes sin necesidad de molestos cuadros de diálogo de "Guardar como".
 
+<img width="1905" height="1030" alt="Captura de pantalla 2026-08-20 231712" src="https://github.com/user-attachments/assets/968d0e48-7029-43a8-a095-2a7b87ae9f31" />
 
-<img width="1062" height="1079" alt="Captura de pantalla 2026-08-16 035528" src="https://github.com/user-attachments/assets/1189335d-98a8-467f-b03c-d347c06ee9d9" />
+<img width="1904" height="1030" alt="Captura de pantalla 2026-08-20 231734" src="https://github.com/user-attachments/assets/ad46988d-c3ff-4c21-a37f-619ae6ed08e8" />
+
+MP4
+<img width="1906" height="1030" alt="Captura de pantalla 2026-08-20 231757" src="https://github.com/user-attachments/assets/53b349cc-9443-4dad-bc66-35f35dfcb843" />
+
+
+
+
 
 ## ✨ Características Principales (v3.0)
 
