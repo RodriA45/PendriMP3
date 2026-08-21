@@ -1,13 +1,13 @@
 [Setup]
 AppName=PendriMP3
-AppVersion=2.0
+AppVersion=3.0
 DefaultDirName={autopf}\PendriMP3
 DefaultGroupName=PendriMP3
 UninstallDisplayIcon={app}\PendriMP3.exe
 Compression=lzma2
 SolidCompression=yes
 OutputDir=setup_output
-OutputBaseFilename=PendriMP3_v2_Setup
+OutputBaseFilename=PendriMP3_v3.0_Setup
 SetupIconFile=backend\icon.ico
 
 [Files]
