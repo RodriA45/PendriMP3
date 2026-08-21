@@ -15,3 +15,5 @@ backend/bin/ffmpeg.exe
 temp_downloads/
 .env
 .DS_Store
+*.zip 
+ 

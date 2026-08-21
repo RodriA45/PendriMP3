@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Download, Loader2, Clock, Music } from 'lucide-react';
 import axios from 'axios';
 
-const ResultsList = ({ results, isSearching, directoryHandle, quality, onPlay, onEdit }) => {
+const ResultsList = ({ results, isSearching, directoryHandle, quality, format, onPlay, onEdit }) => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [downloadStatus, setDownloadStatus] = useState('');
   const [downloadedMeta, setDownloadedMeta] = useState({});
@@ -32,13 +32,14 @@ const ResultsList = ({ results, isSearching, directoryHandle, quality, onPlay, o
     try {
       const metadataRes = await axios.post('http://localhost:8000/api/download', {
         url: video.link,
-        quality: quality
+        quality: quality,
+        format: format || 'mp3'
       });
       const meta = metadataRes.data.metadata;
       
       setDownloadStatus(`Recibiendo archivo (${meta.genre} - ${meta.artist})...`);
       
-      const fileRes = await axios.get(`http://localhost:8000/api/file/${meta.file_id}`, {
+      const fileRes = await axios.get(`http://localhost:8000/api/file/${meta.file_id}?format=${format || 'mp3'}`, {
         responseType: 'blob'
       });
       
@@ -53,7 +54,8 @@ const ResultsList = ({ results, isSearching, directoryHandle, quality, onPlay, o
       const artistDir = await genreDir.getDirectoryHandle(safeArtist, { create: true });
       
       const safeTitle = sanitize(meta.title);
-      const fileHandle = await artistDir.getFileHandle(`${safeTitle}.mp3`, { create: true });
+      const ext = format === 'mp4' ? 'mp4' : 'mp3';
+      const fileHandle = await artistDir.getFileHandle(`${safeTitle}.${ext}`, { create: true });
       
       const writable = await fileHandle.createWritable();
       await writable.write(fileRes.data);
@@ -66,7 +68,7 @@ const ResultsList = ({ results, isSearching, directoryHandle, quality, onPlay, o
           artist: meta.artist,
           genre: meta.genre,
           thumbnail: meta.thumbnail || '',
-          file_path: `${safeGenre}/${safeArtist}/${safeTitle}.mp3`
+          file_path: `${safeGenre}/${safeArtist}/${safeTitle}.${ext}`
         });
       } catch (e) { console.error("Error history", e); }
       
@@ -148,7 +150,7 @@ const ResultsList = ({ results, isSearching, directoryHandle, quality, onPlay, o
                <button 
                  onClick={() => handleDownload(video)}
                  className="w-12 h-12 rounded-full bg-white/5 hover:bg-white text-neutral-400 hover:text-black flex items-center justify-center transition-all group"
-                 title="Descargar MP3"
+                 title={`Descargar ${format === 'mp4' ? 'MP4' : 'MP3'}`}
                >
                  <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
                </button>

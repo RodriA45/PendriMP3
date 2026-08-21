@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { HardDrive, Search, Music, FolderOpen, Info, ShieldAlert, Clock, Settings2, Edit3, PlayCircle } from 'lucide-react';
+import { HardDrive, Search, Music, FolderOpen, Info, ShieldAlert, Clock, Settings2, Edit3, PlayCircle, Video, Headphones } from 'lucide-react';
 import PendriveConnector from './components/PendriveConnector';
 import SearchBar from './components/SearchBar';
 import ResultsList from './components/ResultsList';
 import PlaylistView from './components/PlaylistView';
 import SmartUsbManager from './components/SmartUsbManager';
+import DuplicateManager from './components/DuplicateManager';
 import HistoryView from './components/HistoryView';
 import AudioPlayer from './components/AudioPlayer';
 import MetadataEditor from './components/MetadataEditor';
+import BatchMetadataEditor from './components/BatchMetadataEditor';
 
 function App() {
   const [directoryHandle, setDirectoryHandle] = useState(null);
   const [activeTab, setActiveTab] = useState('search');
+  const [mediaFormat, setMediaFormat] = useState('mp3');
   const [quality, setQuality] = useState('192');
   const [playerFile, setPlayerFile] = useState(null);
   const [metadataToEdit, setMetadataToEdit] = useState(null);
@@ -32,10 +35,26 @@ function App() {
               <p className="text-xs text-neutral-400 font-medium">Smart Music Organizer</p>
             </div>
           </div>
-          <PendriveConnector 
-            directoryHandle={directoryHandle} 
-            setDirectoryHandle={setDirectoryHandle} 
-          />
+          <div className="flex items-center gap-6">
+            <div className="bg-black/30 p-1 rounded-xl border border-white/5 flex items-center">
+              <button 
+                onClick={() => { setMediaFormat('mp3'); setQuality('192'); }}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${mediaFormat === 'mp3' ? 'bg-indigo-500 text-white shadow-lg' : 'text-neutral-400 hover:text-white'}`}
+              >
+                <Headphones className="w-4 h-4" /> MP3
+              </button>
+              <button 
+                onClick={() => { setMediaFormat('mp4'); setQuality('1080'); }}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${mediaFormat === 'mp4' ? 'bg-indigo-500 text-white shadow-lg' : 'text-neutral-400 hover:text-white'}`}
+              >
+                <Video className="w-4 h-4" /> MP4
+              </button>
+            </div>
+            <PendriveConnector 
+              directoryHandle={directoryHandle} 
+              setDirectoryHandle={setDirectoryHandle} 
+            />
+          </div>
         </div>
       </header>
 
@@ -71,17 +90,28 @@ function App() {
                    <div className="px-4 py-3 bg-black/20 rounded-xl border border-white/5">
                      <div className="flex items-center gap-2 mb-3 text-neutral-300">
                        <Settings2 className="w-4 h-4" />
-                       <span className="text-sm font-medium">Calidad de Audio</span>
+                       <span className="text-sm font-medium">{mediaFormat === 'mp3' ? 'Calidad de Audio' : 'Resolución de Video'}</span>
                      </div>
                      <select 
                        value={quality} 
                        onChange={(e) => setQuality(e.target.value)}
                        className="w-full bg-neutral-900 border border-white/10 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                      >
-                       <option value="128">Rápida (128 kbps)</option>
-                       <option value="192">Normal (192 kbps)</option>
-                       <option value="320">Alta Fidelidad (320 kbps)</option>
-                       <option value="0">Máxima (FLAC/Opus)</option>
+                       {mediaFormat === 'mp3' ? (
+                         <>
+                           <option value="128">Rápida (128 kbps)</option>
+                           <option value="192">Normal (192 kbps)</option>
+                           <option value="320">Alta Fidelidad (320 kbps)</option>
+                           <option value="0">Máxima (FLAC/Opus)</option>
+                         </>
+                       ) : (
+                         <>
+                           <option value="1080">Full HD (1080p)</option>
+                           <option value="720">HD (720p)</option>
+                           <option value="480">SD (480p)</option>
+                           <option value="360">Baja (360p)</option>
+                         </>
+                       )}
                      </select>
                    </div>
                  </nav>
@@ -108,9 +138,9 @@ function App() {
                          }}
                        />
                        {playlist ? (
-                         <PlaylistView playlist={playlist} directoryHandle={directoryHandle} quality={quality} />
+                         <PlaylistView playlist={playlist} directoryHandle={directoryHandle} quality={quality} format={mediaFormat} />
                        ) : (
-                         <ResultsList results={searchResults} isSearching={isSearching} directoryHandle={directoryHandle} quality={quality} onPlay={setPlayerFile} onEdit={setMetadataToEdit} />
+                         <ResultsList results={searchResults} isSearching={isSearching} directoryHandle={directoryHandle} quality={quality} format={mediaFormat} onPlay={setPlayerFile} onEdit={setMetadataToEdit} />
                        )}
                      </>
                    ) : (
@@ -145,6 +175,8 @@ function App() {
              </div>
 
              <SmartUsbManager directoryHandle={directoryHandle} />
+             <DuplicateManager />
+             <BatchMetadataEditor />
 
              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-5">
                 <div className="flex items-center gap-3 mb-3">

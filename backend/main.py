@@ -8,6 +8,11 @@ import os
 import tempfile
 import sqlite3
 import psutil
+from mutagen.id3 import ID3
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Initialize History DB
 DB_PATH = "history.db"
@@ -49,6 +54,7 @@ class SearchQuery(BaseModel):
 class DownloadRequest(BaseModel):
     url: str
     quality: str = '192'
+    format: str = 'mp3'
 
 
 
@@ -59,7 +65,7 @@ def search(request: SearchQuery):
 
 @app.post("/api/download")
 def download(request: DownloadRequest):
-    metadata = process_download(request.url, request.quality)
+    metadata = process_download(request.url, request.quality, request.format)
     return {"metadata": metadata}
 
 @app.post("/api/playlist/extract")
@@ -116,25 +122,32 @@ def edit_metadata(req: MetadataEditRequest):
 
 @app.delete("/api/cleanup/{file_id}")
 def cleanup(file_id: str):
-    file_path = f"{TEMP_DIR}/{file_id}.mp3"
-    if os.path.exists(file_path):
-        try:
-            os.remove(file_path)
-            return {"status": "success"}
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+    file_path_mp3 = f"{TEMP_DIR}/{file_id}.mp3"
+    file_path_mp4 = f"{TEMP_DIR}/{file_id}.mp4"
+    deleted = False
+    
+    if os.path.exists(file_path_mp3):
+        os.remove(file_path_mp3)
+        deleted = True
+    if os.path.exists(file_path_mp4):
+        os.remove(file_path_mp4)
+        deleted = True
+        
+    if deleted:
+        return {"status": "success"}
     return {"status": "not_found"}
 
 @app.get("/api/file/{file_id}")
-def get_file(file_id: str):
-    file_path = f"{TEMP_DIR}/{file_id}.mp3"
+def get_file(file_id: str, format: str = 'mp3'):
+    file_path = f"{TEMP_DIR}/{file_id}.{format}"
+    
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
-    
+        
     return FileResponse(
         path=file_path,
-        media_type="audio/mpeg",
-        filename=f"{file_id}.mp3"
+        media_type="video/mp4" if format == 'mp4' else "audio/mpeg",
+        filename=f"{file_id}.{format}"
     )
 
 @app.get("/api/drives")
@@ -153,9 +166,30 @@ def get_drives():
                 })
             except PermissionError:
                 continue
-    # Filter to only removable if any exist, else all (useful for testing)
+    # Strictly return only removable drives to prevent deleting from C:/D:
     removable_drives = [d for d in drives if d['removable']]
-    return {"drives": removable_drives if removable_drives else drives}
+    return {"drives": removable_drives}
+
+class ScanRequest(BaseModel):
+    directory: str
+
+class DeleteRequest(BaseModel):
+    file_paths: list
+
+@app.post("/api/duplicates/scan")
+def scan_duplicates(req: ScanRequest):
+    from services.duplicates import scan_for_duplicates
+    if not os.path.exists(req.directory):
+        raise HTTPException(status_code=400, detail="El directorio no existe")
+    
+    results = scan_for_duplicates(req.directory)
+    return {"results": results}
+
+@app.post("/api/duplicates/delete")
+def delete_duplicates(req: DeleteRequest):
+    from services.duplicates import delete_files
+    deleted, errors = delete_files(req.file_paths)
+    return {"deleted": deleted, "errors": errors}
 
 class HistoryEntry(BaseModel):
     title: str
@@ -195,6 +229,66 @@ else:
 
 if os.path.exists(FRONTEND_DIR):
     app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+class BatchUpdateRequest(BaseModel):
+    file_paths: list[str]
+    genre: str = None
+    artist: str = None
+
+@app.post("/api/library/scan")
+def scan_library(req: ScanRequest):
+    if not os.path.exists(req.directory):
+        raise HTTPException(status_code=400, detail="El directorio no existe.")
+        
+    results = []
+    for root, _, files in os.walk(req.directory):
+        for file in files:
+            if file.lower().endswith('.mp3'):
+                full_path = os.path.join(root, file).replace('\\', '/')
+                try:
+                    audio = ID3(full_path)
+                    genre = audio.getall('TCON')[0].text[0] if audio.getall('TCON') else 'Desconocido'
+                    artist = audio.getall('TPE1')[0].text[0] if audio.getall('TPE1') else 'Desconocido'
+                    title = audio.getall('TIT2')[0].text[0] if audio.getall('TIT2') else file
+                except:
+                    genre = 'Desconocido'
+                    artist = 'Desconocido'
+                    title = file
+                    
+                results.append({
+                    "path": full_path,
+                    "filename": file,
+                    "title": title,
+                    "artist": artist,
+                    "genre": genre
+                })
+                
+    return {"results": results}
+
+@app.post("/api/library/update")
+def update_library(req: BatchUpdateRequest):
+    updated = 0
+    errors = []
+    for path in req.file_paths:
+        try:
+            if os.path.exists(path):
+                from mutagen.id3 import TCON, TPE1
+                try:
+                    audio = ID3(path)
+                except:
+                    audio = ID3()
+                
+                if req.genre:
+                    audio.add(TCON(encoding=3, text=req.genre))
+                if req.artist:
+                    audio.add(TPE1(encoding=3, text=req.artist))
+                    
+                audio.save(path, v2_version=3)
+                updated += 1
+        except Exception as e:
+            errors.append({"path": path, "error": str(e)})
+            
+    return {"updated": updated, "errors": errors}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

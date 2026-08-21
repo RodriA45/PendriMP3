@@ -50,18 +50,32 @@ def search_youtube(query: str, limit: int = 5):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-def process_download(url: str, quality: str = '192'):
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': f'{TEMP_DIR}/%(id)s.%(ext)s',
-        'ffmpeg_location': FFMPEG_PATH,
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': quality,
-        }],
-        'quiet': True,
-    }
+def process_download(url: str, quality: str = '192', fmt: str = 'mp3'):
+    if fmt == 'mp4':
+        if quality in ['0', '128', '192', '320']: # Fallbacks
+            quality = '1080'
+        ydl_opts = {
+            'format': f'bestvideo[ext=mp4][height<={quality}]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'outtmpl': f'{TEMP_DIR}/%(id)s.%(ext)s',
+            'merge_output_format': 'mp4',
+            'ffmpeg_location': FFMPEG_PATH,
+            'quiet': True,
+        }
+    else:
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': f'{TEMP_DIR}/%(id)s.%(ext)s',
+            'ffmpeg_location': FFMPEG_PATH,
+            'writethumbnail': True,
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': quality,
+            }, {
+                'key': 'EmbedThumbnail',
+            }],
+            'quiet': True,
+        }
     
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -84,26 +98,28 @@ def process_download(url: str, quality: str = '192'):
                 "title": info.get('title', 'Unknown Title'),
                 "artist": info.get('uploader', 'Unknown Artist'),
                 "genre": genre,
-                "thumbnail": info.get('thumbnail')
+                "thumbnail": info.get('thumbnail'),
+                "format": fmt
             }
             
-            # Embed lyrics using syncedlyrics
-            file_path = f"{TEMP_DIR}/{video_id}.mp3"
-            if os.path.exists(file_path):
-                try:
-                    search_query = f"{metadata['title']} {metadata['artist']}"
-                    lrc = syncedlyrics.search(search_query)
-                    if lrc:
-                        try:
-                            audio = ID3(file_path)
-                        except error:
-                            audio = ID3()
-                        
-                        audio.add(USLT(encoding=3, lang='eng', desc='desc', text=lrc))
-                        audio.save(file_path, v2_version=3)
-                except Exception as e:
-                    print(f"Error embedding lyrics: {e}")
-                    pass
+            if fmt == 'mp3':
+                # Embed lyrics using syncedlyrics
+                file_path = f"{TEMP_DIR}/{video_id}.mp3"
+                if os.path.exists(file_path):
+                    try:
+                        search_query = f"{metadata['title']} {metadata['artist']}"
+                        lrc = syncedlyrics.search(search_query)
+                        if lrc:
+                            try:
+                                audio = ID3(file_path)
+                            except error:
+                                audio = ID3()
+                            
+                            audio.add(USLT(encoding=3, lang='eng', desc='desc', text=lrc))
+                            audio.save(file_path, v2_version=3)
+                    except Exception as e:
+                        print(f"Error embedding lyrics: {e}")
+                        pass
 
             return metadata
             
@@ -135,28 +151,41 @@ def extract_playlist(url: str):
             raise HTTPException(status_code=400, detail=str(e))
             
     elif "spotify.com" in url:
-        import re, urllib.request, json
-        match = re.search(r'spotify\.com/([^/]+)/([^?]+)', url)
-        if match:
-            embed_url = f"https://open.spotify.com/embed/{match.group(1)}/{match.group(2)}"
-            req = urllib.request.Request(embed_url, headers={'User-Agent': 'Mozilla/5.0'})
-            try:
-                html = urllib.request.urlopen(req).read().decode('utf-8')
-                next_data = re.search(r'<script id="__NEXT_DATA__" type="application/json">([^<]+)</script>', html)
-                if next_data:
-                    data = json.loads(next_data.group(1))
-                    entity = data['props']['pageProps']['state']['data']['entity']
-                    tracks = []
-                    for item in entity.get('trackList', []):
-                        tracks.append({
-                            'title': item.get('title'),
-                            'uploader': item.get('subtitle', 'Desconocido'),
-                            'url': None,
-                            'source': 'spotify',
-                            'thumbnail': entity.get('coverArt', {}).get('extractedColors', {}).get('colorDark', {}).get('hex') # Fallback for now
-                        })
-                    return {"playlist_title": entity.get('title', 'Spotify Playlist'), "tracks": tracks}
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Error en Spotify: {str(e)}")
+        import spotipy
+        from spotipy.oauth2 import SpotifyClientCredentials
+        
+        client_id = os.environ.get("SPOTIPY_CLIENT_ID")
+        client_secret = os.environ.get("SPOTIPY_CLIENT_SECRET")
+        
+        if not client_id or not client_secret:
+            raise HTTPException(status_code=400, detail="Faltan credenciales de Spotify (SPOTIPY_CLIENT_ID y SPOTIPY_CLIENT_SECRET) en variables de entorno o archivo .env. Configúralas gratis en developer.spotify.com")
+            
+        try:
+            sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=client_id, client_secret=client_secret))
+            playlist_id = url.split("playlist/")[1].split("?")[0]
+            
+            playlist_data = sp.playlist(playlist_id)
+            tracks = []
+            
+            for item in playlist_data.get('tracks', {}).get('items', []):
+                track = item.get('track')
+                if not track: continue
+                
+                artist_name = track['artists'][0]['name'] if track.get('artists') else 'Desconocido'
+                thumbnail = ''
+                if track.get('album') and track['album'].get('images') and len(track['album']['images']) > 0:
+                    thumbnail = track['album']['images'][0]['url']
+                    
+                tracks.append({
+                    'title': track.get('name'),
+                    'uploader': artist_name,
+                    'url': None,
+                    'source': 'spotify',
+                    'thumbnail': thumbnail
+                })
+                
+            return {"playlist_title": playlist_data.get('name', 'Spotify Playlist'), "tracks": tracks}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error en Spotify API: {str(e)}")
                 
     raise HTTPException(status_code=400, detail="URL de playlist no soportada")

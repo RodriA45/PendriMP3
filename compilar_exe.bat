@@ -32,7 +32,12 @@ if exist "build" rmdir /s /q "build"
 if exist "PendriMP3.spec" del "PendriMP3.spec"
 
 :: Usamos --onedir (por defecto al quitar --onefile) para crear una carpeta portable completa, lo que hace que inicie al instante.
-call venv\Scripts\pyinstaller --clean --noconfirm --windowed --name "PendriMP3" --icon "icon.ico" --add-data "../frontend/dist;frontend_dist/" --add-data "bin/ffmpeg.exe;bin/" app_window.py
+call python -m PyInstaller --clean --noconfirm --windowed --name "PendriMP3" --icon "icon.ico" --add-data "../frontend/dist;frontend_dist/" --add-data "bin/ffmpeg.exe;bin/" app_window.py
+
+:: Copiar el archivo .env para que las claves de Spotify funcionen en la versión portable
+if exist ".env" (
+    copy ".env" "dist\PendriMP3\.env" /Y
+)
 
 echo.
 echo ===================================================
@@ -42,4 +47,3 @@ echo Adentro veras el ejecutable PendriMP3.exe.
 echo Puedes comprimir esa carpeta en .zip y enviarsela a tus 
 echo clientes. Inicia al instante en cualquier PC.
 echo ===================================================
-pause

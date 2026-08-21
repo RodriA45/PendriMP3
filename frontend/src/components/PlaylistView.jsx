@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Download, Loader2, Music, CheckCircle2, AlertCircle, XCircle } from 'lucide-react';
 import axios from 'axios';
 
-const PlaylistView = ({ playlist, directoryHandle, quality }) => {
+const PlaylistView = ({ playlist, directoryHandle, quality, format }) => {
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusMap, setStatusMap] = useState({}); // { index: 'pending' | 'downloading' | 'success' | 'error' | 'cancelled' }
@@ -52,13 +52,14 @@ const PlaylistView = ({ playlist, directoryHandle, quality }) => {
         // Request download from backend
         const response = await axios.post('http://localhost:8000/api/download', {
           url: downloadUrl,
-          quality: quality
+          quality: quality,
+          format: format || 'mp3'
         });
         
         const metadata = response.data.metadata;
         
         // Fetch file blob
-        const fileResponse = await axios.get(`http://localhost:8000/api/file/${metadata.file_id}`, {
+        const fileResponse = await axios.get(`http://localhost:8000/api/file/${metadata.file_id}?format=${format || 'mp3'}`, {
           responseType: 'blob'
         });
         const blob = fileResponse.data;
@@ -71,7 +72,9 @@ const PlaylistView = ({ playlist, directoryHandle, quality }) => {
         const genreDir = await directoryHandle.getDirectoryHandle(genre, { create: true });
         const artistDir = await genreDir.getDirectoryHandle(artist, { create: true });
         
-        const fileHandle = await artistDir.getFileHandle(`${cleanTitle}.mp3`, { create: true });
+        const ext = format === 'mp4' ? 'mp4' : 'mp3';
+        const fileHandle = await artistDir.getFileHandle(`${cleanTitle}.${ext}`, { create: true });
+        
         const writable = await fileHandle.createWritable();
         await writable.write(blob);
         await writable.close();
@@ -86,7 +89,7 @@ const PlaylistView = ({ playlist, directoryHandle, quality }) => {
             artist: metadata.artist,
             genre: metadata.genre,
             thumbnail: metadata.thumbnail || '',
-            file_path: `${genre}/${artist}/${cleanTitle}.mp3`
+            file_path: `${genre}/${artist}/${cleanTitle}.${ext}`
           });
         } catch (e) { console.error("Error history", e); }
         
@@ -143,6 +146,21 @@ const PlaylistView = ({ playlist, directoryHandle, quality }) => {
           </button>
         </div>
       </div>
+
+      {downloading && playlist.tracks.length > 0 && (
+        <div className="mb-6">
+          <div className="flex justify-between text-xs text-neutral-400 mb-2 font-medium">
+            <span>Progreso General</span>
+            <span>{Math.round((progress / playlist.tracks.length) * 100)}% ({progress} de {playlist.tracks.length})</span>
+          </div>
+          <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-indigo-500 transition-all duration-300"
+              style={{ width: `${(progress / playlist.tracks.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
         {playlist.tracks.map((track, index) => (

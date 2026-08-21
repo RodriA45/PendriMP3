@@ -8,3 +8,5 @@ pywebview
 Pillow
 syncedlyrics
 psutil
+spotipy
+python-dotenv
