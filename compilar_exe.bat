@@ -34,10 +34,9 @@ if exist "PendriMP3.spec" del "PendriMP3.spec"
 :: Usamos --onedir (por defecto al quitar --onefile) para crear una carpeta portable completa, lo que hace que inicie al instante.
 call python -m PyInstaller --clean --noconfirm --windowed --name "PendriMP3" --icon "icon.ico" --add-data "../frontend/dist;frontend_dist/" --add-data "bin/ffmpeg.exe;bin/" app_window.py
 
-:: Copiar el archivo .env para que las claves de Spotify funcionen en la versión portable
-if exist ".env" (
-    copy ".env" "dist\PendriMP3\.env" /Y
-)
+:: Crear un archivo .env de plantilla para que el usuario ponga sus propias claves
+echo SPOTIPY_CLIENT_ID=poner_tu_client_id_aqui > "dist\PendriMP3\.env"
+echo SPOTIPY_CLIENT_SECRET=poner_tu_client_secret_aqui >> "dist\PendriMP3\.env"
 
 echo.
 echo ===================================================
