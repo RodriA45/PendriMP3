@@ -9,10 +9,6 @@ import tempfile
 import sqlite3
 import psutil
 from mutagen.id3 import ID3
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Initialize History DB
 DB_PATH = "history.db"

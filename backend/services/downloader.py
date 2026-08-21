@@ -151,41 +151,44 @@ def extract_playlist(url: str):
             raise HTTPException(status_code=400, detail=str(e))
             
     elif "spotify.com" in url:
-        import spotipy
-        from spotipy.oauth2 import SpotifyClientCredentials
+        import json
+        import urllib.request
+        import re
         
-        client_id = os.environ.get("SPOTIPY_CLIENT_ID")
-        client_secret = os.environ.get("SPOTIPY_CLIENT_SECRET")
-        
-        if not client_id or not client_secret:
-            raise HTTPException(status_code=400, detail="Faltan credenciales de Spotify (SPOTIPY_CLIENT_ID y SPOTIPY_CLIENT_SECRET) en variables de entorno o archivo .env. Configúralas gratis en developer.spotify.com")
-            
         try:
-            sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=client_id, client_secret=client_secret))
+            # Normalizar URL para extraer ID
             playlist_id = url.split("playlist/")[1].split("?")[0]
+            embed_url = f"https://open.spotify.com/embed/playlist/{playlist_id}"
             
-            playlist_data = sp.playlist(playlist_id)
-            tracks = []
+            req = urllib.request.Request(embed_url, headers={'User-Agent': 'Mozilla/5.0'})
+            html = urllib.request.urlopen(req).read().decode('utf-8')
             
-            for item in playlist_data.get('tracks', {}).get('items', []):
-                track = item.get('track')
-                if not track: continue
+            match = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html)
+            if not match:
+                raise Exception("No se pudo encontrar la data de la playlist (quizás es privada o cambió el diseño).")
                 
-                artist_name = track['artists'][0]['name'] if track.get('artists') else 'Desconocido'
-                thumbnail = ''
-                if track.get('album') and track['album'].get('images') and len(track['album']['images']) > 0:
-                    thumbnail = track['album']['images'][0]['url']
-                    
+            data = json.loads(match.group(1))
+            playlist = data['props']['pageProps']['state']['data']['entity']
+            
+            playlist_title = playlist.get('name', 'Spotify Playlist')
+            track_list = playlist.get('trackList', [])
+            
+            tracks = []
+            for track in track_list:
+                artist_name = track.get('subtitle', 'Desconocido')
+                thumbnail = track.get('coverArt', {}).get('extractedColors', {}).get('colorDark', {}).get('hex', '')
+                # Si no tiene coverArt fácil, lo dejamos vacío para que yt-dlp busque la de youtube
+                
                 tracks.append({
-                    'title': track.get('name'),
+                    'title': track.get('title'),
                     'uploader': artist_name,
                     'url': None,
                     'source': 'spotify',
-                    'thumbnail': thumbnail
+                    'thumbnail': None
                 })
                 
-            return {"playlist_title": playlist_data.get('name', 'Spotify Playlist'), "tracks": tracks}
+            return {"playlist_title": playlist_title, "tracks": tracks}
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Error en Spotify API: {str(e)}")
-                
+            raise HTTPException(status_code=400, detail=f"Error leyendo Spotify (Web Scraping): {str(e)}")
+            
     raise HTTPException(status_code=400, detail="URL de playlist no soportada")
