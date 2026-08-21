@@ -7,7 +7,7 @@ PendriMP3 es una aplicación web local moderna diseñada para buscar, descargar 
 
 ## ✨ Características Principales (v3.0)
 
-* **Descarga de Playlists de Spotify:** ¡NUEVO! Pega un enlace de Spotify y descarga toda la lista de reproducción automáticamente (requiere configurar API keys en el archivo `.env`).
+* **Descarga de Playlists de Spotify:** ¡NUEVO! Pega un enlace de Spotify y descarga la lista de reproducción automáticamente (sin necesidad de configurar claves ni cuentas).
 * **Editor Masivo de Metadatos:** ¡NUEVO! Selecciona tu pendrive y edita el artista o género de decenas de canciones MP3 con un solo clic.
 * **Portadas Incrustadas (Cover Art):** ¡NUEVO! Los archivos MP3 ahora incluyen automáticamente la miniatura de YouTube en alta calidad incrustada en su interior (visible en celulares y estéreos modernos).
 * **Escáner de Duplicados Inteligente:** ¡NUEVO! Ahora agrupa las canciones por Artista y Título para evitar falsos positivos entre canciones con el mismo nombre.
@@ -49,9 +49,8 @@ Esta opción crea la carpeta portable tradicional (sin necesidad de instalación
 
 1. Clona o descarga este repositorio en tu computadora.
 2. Haz doble clic en **`compilar_exe.bat`**. Este script descargará el motor de FFmpeg portable, compilará la interfaz de React y empaquetará todo usando PyInstaller.
-3. Recuerda configurar el archivo `.env` en la raíz de la carpeta si deseas utilizar la integración con Spotify.
-4. Cuando termine, encontrarás tu carpeta mágica portable en `backend\dist\PendriMP3\`. 
-5. ¡Cópialo a tu pendrive o escritorio, haz doble clic en el `.exe` y disfruta!
+3. Cuando termine, encontrarás tu carpeta mágica portable en `backend\dist\PendriMP3\`. 
+4. ¡Cópialo a tu pendrive o escritorio, haz doble clic en el `.exe` y disfruta!
 
 ## 🛡️ Solución de Problemas: Antivirus (Falso Positivo)
 
